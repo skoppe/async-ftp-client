@@ -40,6 +40,9 @@ class FtpClient  extends FSM[FtpClient.State,FtpClient.Data] {
       context.parent ! Ftp.Connected
       goto(Connected) using ConnectData(sender)
     }
+    case x =>
+      println(s"Unknown Command ${x} in Idle state")
+      stay()
   }
 
   when(Connected) {
@@ -55,6 +58,9 @@ class FtpClient  extends FSM[FtpClient.State,FtpClient.Data] {
       context.parent ! Ftp.AuthSuccess
       goto(Active) using ConnectData(ctx.connection)
     }
+    case Event(Response(code, message), ctx:AuthData) =>
+      println(s"Unknown Command ${code} in Idle state")
+      stay()
   }
 
   when(Active) {
@@ -70,6 +76,9 @@ class FtpClient  extends FSM[FtpClient.State,FtpClient.Data] {
       self ! Ftp.Disconnect
       goto(Disconnecting) using ctx
     }
+    case Event(Response(code, message), ctx: ConnectData) =>
+      println(s"Unknown Command ${code} in Active state")
+      stay()
   }
 
   when(Downloading) {
@@ -105,6 +114,9 @@ class FtpClient  extends FSM[FtpClient.State,FtpClient.Data] {
       context.parent ! TransferBytes(data)
       goto(Active) using ConnectData(ctx.connection)
     }
+    case Event(Response(code, message), ctx: TransferData) =>
+      println(s"Unknown Command ${code} in Downloading state")
+      stay()
   }
 
   when(Disconnecting) {
@@ -163,6 +175,9 @@ class FtpClient  extends FSM[FtpClient.State,FtpClient.Data] {
       context.parent ! Ftp.DirListing(files.toList)
       goto(Active) using ConnectData(ctx.connection)
     }
+    case Event(Response(code, message), ctx: TransferData) =>
+      println(s"Unknown Command ${code} in Listen state")
+      stay()
 
   }
 

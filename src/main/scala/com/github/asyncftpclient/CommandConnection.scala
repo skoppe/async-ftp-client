@@ -54,6 +54,24 @@ class CommandConnection(val addr:InetSocketAddress) extends FSM[State, Data] wit
           buffer.write(bytes, 0, bytes.size)
           goto(ReceiveMulti) using MultiData(ctx.connection, buffer)
         }
+        case x =>
+          val lines = data.utf8String.lines.toSeq
+
+          val lineReg = "(\\d+)-(.*)".r
+          val endReg = "(\\d+) (.*)".r
+
+          val code = lines.take(1)(0) match
+          {
+            case lineReg(code,_) => code
+          }
+
+          val raw = lines.map{
+            case lineReg(code,data) => data
+            case endReg(code,data) => data
+          }.mkString("\r\n")
+
+          context.parent ! Response(code.toInt, raw)
+          stay()
       }
     }
     case Event(Request(line), ctx:PlainData) => {
